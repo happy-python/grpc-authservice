@@ -1,0 +1,49 @@
+---
+apiVersion: getambassador.io/v1
+kind: AuthService
+metadata:
+  name: authentication
+spec:
+  proto: grpc
+  auth_service: "authservice:20020"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authservice
+spec:
+  type: ClusterIP
+  selector:
+    name:  authservice
+  ports:
+    - protocol: TCP
+      port: 20020
+      targetPort: 20020
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authservice
+spec:
+  selector:
+    matchLabels:
+      name: authservice
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: authservice
+    spec:
+      serviceAccountName: ambassador
+      containers:
+        - name: authservice
+          image: meetdocker/grpc-authservice
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 20020
+          env:
+            - name: ADDRESS
+              value: ":20020"
+---
